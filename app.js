@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(cors());
 require('./db/conn');
 
-
+app.use(express.static("build"));
 
 
 
@@ -282,7 +282,7 @@ app.post('/api/voter/login', async (req, res) => {
   
 
   if(voter){
-    console.log(voter.First_name);  
+     
     const token = Jwt.sign({
       First_name: voter.First_name,
       Last_name: voter.Last_name,
