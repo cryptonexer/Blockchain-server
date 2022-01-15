@@ -4,7 +4,7 @@ const verifyToken = (req,res,next) => {
 
     let token = req.headers['x-access-token'];
    
-    console.log(token);
+    
     try {
         if(token){
             const user = Jwt.verify(token, process.env.SECRETKEY);

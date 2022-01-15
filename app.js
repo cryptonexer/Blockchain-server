@@ -311,19 +311,21 @@ app.get('/api/voter/me', verifyvoter, async (req,res) => {
 })
 
 
-app.put('/voteballot/vote/:id', function(req, res){
+app.get('/voteballot/vote/:id', function(req, res){
   const id = req.params.id;
-  const email = req.params.email
   var i = 1;
   User.findById(id).exec((err, result) => {
     
-    count = result.Count;
+    var count = result.Count;
     var newcount = count + i;
 
-     const vote = User.findByIdAndUpdate(id, {Count: newcount}, function(err, res){
+
+     User.findByIdAndUpdate(id, {Count: newcount}, function(err, result){
        if(err) throw err;
-         
+       console.log(result);
+       return res.send({Status: newcount});
      })
+     
     
    
   });
