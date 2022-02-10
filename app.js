@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const dotenv = require('dotenv');
-dotenv.config({path:'./secure.env'});
+dotenv.config({ path: './secure.env' });
 const cors = require('cors');
 const User = require('./model/PartyregSchema');
 const Admin = require('./model/Adminschema');
@@ -10,6 +10,7 @@ const Jwt = require('jsonwebtoken');
 const verifypartyuser = require('./middleware/verifyPartyToken');
 const verifyvoter = require('./middleware/verifyVoterToken')
 const port = process.env.PORT;
+const fs = require('fs')
 
 
 //middleware
@@ -22,81 +23,83 @@ app.use(express.static("build"));
 
 
 //party register route
-app.post('/api/party/register', async (req,res) => {
-   const {Party_name,Candidate_name,Email,Slogan,Description,Password,Cpassword} = req.body;
+app.post('/api/party/register', async (req, res) => {
+  const { Party_name, Candidate_name, Email, Slogan, Description, Password, Cpassword } = req.body;
 
-  if(!Party_name || !Candidate_name || !Email || !Slogan || !Description || !Password || !Cpassword){
-    return res.json({Status: 'Please Enter all details'});
+  if (!Party_name || !Candidate_name || !Email || !Slogan || !Description || !Password || !Cpassword) {
+    return res.json({ Status: 'Please Enter all details' });
   }
-  if(Password !== Cpassword){
-    return res.json({Status: 'Please Enter Same Password'});
+  if (Password !== Cpassword) {
+    return res.json({ Status: 'Please Enter Same Password' });
   }
   const Stat = "Inactive";
-    
-    try {
-      const newUser = await User.create({
-          Party_name: Party_name,
-          Candidate_name: Candidate_name,
-          Email: Email,
-          Slogan: Slogan,
-          Description: Description,
-          Password: Password,
-          Status: Stat,
-          Count: 0
-        })
 
-        if(newUser){
-          res.json({Status:'ok'});
-        }
-    } catch (error) {
-      if(error) throw error;
-      res.json({Status: 'error', error: 'Duplicate email'});
-      }    
+  try {
+    const newUser = await User.create({
+      Party_name: Party_name,
+      Candidate_name: Candidate_name,
+      Email: Email,
+      Slogan: Slogan,
+      Description: Description,
+      Password: Password,
+      Status: Stat,
+      Count: 0
+    })
+
+    if (newUser) {
+      res.json({ Status: 'ok' });
+    }
+  } catch (error) {
+    if (error) throw error;
+    res.json({ Status: 'error', error: 'Duplicate email' });
+  }
 });
 
 
 //Party Login route
-app.post('/api/party/login' , async (req,res) => {
-    const user = await User.findOne({Email: req.body.Email, Password:req.body.Password})
+app.post('/api/party/login', async (req, res) => {
+  const user = await User.findOne({ Email: req.body.Email, Password: req.body.Password })
 
-    if(user){
-      const token = Jwt.sign({
-        Party_name: user.Party_name,
-        Candidate_name: user.Candidate_name,
-        Email: user.Email,
-        Slogan: user.Slogan,
-        Description: user.Description,
-      },process.env.SECRETKEY,{
-        expiresIn: 25892000000
-      });
+  if (user) {
+    const token = Jwt.sign({
+      Party_name: user.Party_name,
+      Candidate_name: user.Candidate_name,
+      Email: user.Email,
+      Slogan: user.Slogan,
+      Description: user.Description,
+    }, process.env.SECRETKEY, {
+      expiresIn: 25892000000
+    });
 
-      res.json({Status:'ok', data: {
+    res.json({
+      Status: 'ok', data: {
         token,
-        user:{
+        user: {
           id: user._id,
           Email: user.Email
         }
-      }});
-    }
-    else{
-      res.json({Status:'error', user: false});
-    }
+      }
+    });
+  }
+  else {
+    res.json({ Status: 'error', user: false });
+  }
 });
 
 //Party Profile route
-app.get('/api/party/me', verifypartyuser, async (req,res) => {
-  const rootuser = await User.findOne({Email: req.Email});   
-  return res.json({data:rootuser});
+app.get('/api/party/me', verifypartyuser, async (req, res) => {
+  const rootuser = await User.findOne({ Email: req.Email });
+  return res.json({ data: rootuser });
 })
 
 
 //=============================================================================================================
 
 //admin Userdetails route
-app.get('/api/party/details', (req,res) => {
-     User.find({}).exec((err, result) => {
-    if(err) throw err;
-    res.send({data:result});
+app.get('/api/party/details', (req, res) => {
+  User.find({}).exec((err, result) => {
+    if (err) throw err;
+    res.send({ data: result });
   })
 })
 
@@ -175,11 +178,11 @@ app.delete('/api/delete/:id', async (req, res) => {
 //===================================================================
 
 //ADMIN CONTROL FOR VOTERS
-app.get('/api/Voter/details', (req,res) => {
+app.get('/api/Voter/details', (req, res) => {
   Voter.find({}).exec((err, result) => {
- if(err) throw err;
- res.send({data:result});
-})
+    if (err) throw err;
+    res.send({ data: result });
+  })
 })
 
 app.get('/api/activeVoters', (req, res) => {
@@ -232,22 +235,21 @@ app.put('/api/Voter/decline', async (req, res) => {
 
 
 //Vote Login Route
-app.post("/api/voter/register", async (req, res) =>{
-  const {First_name, Last_name, Phone, Email, Address, Taluka, City, Pincode, Aadhar, VoterID, Password, Cpassword} = req.body;
+app.post("/api/voter/register", async (req, res) => {
+  const { First_name, Last_name, Phone, Email, Address, Taluka, City, Pincode, Aadhar, VoterID, Password, Cpassword } = req.body;
 
-  if(!First_name || !Last_name || !Phone || !Email || !Address || !Taluka || !City || !Pincode || !Aadhar || !VoterID || !Password || !Cpassword)
-  {
-    return res.json({Status: 'Please Enter all details'});
+  if (!First_name || !Last_name || !Phone || !Email || !Address || !Taluka || !City || !Pincode || !Aadhar || !VoterID || !Password || !Cpassword) {
+    return res.json({ Status: 'Please Enter all details' });
   }
 
-  if(Password !== Cpassword){
-    return res.json({Status: 'Please Enter Same Password'});
+  if (Password !== Cpassword) {
+    return res.json({ Status: 'Please Enter Same Password' });
   }
 
   const profileStat = "NotVerified";
   const voteStat = "false"
 
-  try{
+  try {
     const newVoter = await Voter.create({
       First_name: First_name,
       Last_name: Last_name,
@@ -264,13 +266,13 @@ app.post("/api/voter/register", async (req, res) =>{
       VoteStatus: voteStat
     })
 
-    if(newVoter){
-      res.json({Status: 'ok'});
+    if (newVoter) {
+      res.json({ Status: 'ok' });
     }
   }
-  catch(error){
-    if(error) throw error;
-    res.json({Status: 'error', error: 'Duplicate Email'});
+  catch (error) {
+    if (error) throw error;
+    res.json({ Status: 'error', error: 'Duplicate Email' });
   }
 
 });
@@ -278,66 +280,101 @@ app.post("/api/voter/register", async (req, res) =>{
 
 // Voter Login route
 app.post('/api/voter/login', async (req, res) => {
-  const voter = await Voter.findOne({Email: req.body.Email, Password: req.body.Password});
-  
+  const voter = await Voter.findOne({ Email: req.body.Email, Password: req.body.Password });
 
-  if(voter){
-     
+
+  if (voter) {
+
     const token = Jwt.sign({
       First_name: voter.First_name,
       Last_name: voter.Last_name,
       Email: voter.Email
 
-    },process.env.SECRETKEY,{
+    }, process.env.SECRETKEY, {
       expiresIn: 25892000000
     });
-    res.json({Status:'ok', data: {
-      token,
-      voter:{
-        id: voter._id,
-        Email: voter.Email
+    res.json({
+      Status: 'ok', data: {
+        token,
+        voter: {
+          id: voter._id,
+          Email: voter.Email
+        }
       }
-    }});
+    });
   }
-  else{
-    res.json({Status:'error', user: false});
+  else {
+    res.json({ Status: 'error', user: false });
   }
 })
 
 //Party Profile route
-app.get('/api/voter/me', verifyvoter, async (req,res) => {
-  const rootuser = await Voter.findOne({Email: req.Email});   
-  return res.json({data:rootuser});
+app.get('/api/voter/me', verifyvoter, async (req, res) => {
+  const rootuser = await Voter.findOne({ Email: req.Email });
+  return res.json({ data: rootuser });
 })
 
 
-app.get('/voteballot/vote/:id', function(req, res){
+app.get('/voteballot/vote/:id', function (req, res) {
   const id = req.params.id;
   var i = 1;
   User.findById(id).exec((err, result) => {
-    
+
     var count = result.Count;
     var newcount = count + i;
 
-
-     User.findByIdAndUpdate(id, {Count: newcount}, function(err, result){
-       if(err) throw err;
-       console.log(result);
-       return res.send({Status: newcount});
-     })
-     
-    
-   
+    User.findByIdAndUpdate(id, { Count: newcount }, function (err, result) {
+      if (err) throw err;
+      return res.send({ Status: newcount });
+    })
   });
-  
-  
+})
 
-  
+
+//changing vote status to true
+app.put('/api/voter/votestat/:id', async (req, res) => {
+  const id = req.params.id;
+  const voteStat = "true";
+
+  Voter.findByIdAndUpdate(id, { VoteStatus: voteStat }, function (err, result) {
+    if (err) throw err;
+    return res.send({ votestatus: voteStat })
+  })
+})
+
+
+//creating transactions for vote
+app.get('/api/voter/votertrans/:id1/:id2', async (req, res) => {
+  try {
+    const voterid = req.params.id1;
+    let voterdata = await Voter.findById(voterid).exec();
+
+    const Partyid = req.params.id2;
+    let partydata = await User.findById(Partyid).exec();
+
+    const unique_ID = voterdata._id;
+    const From = voterdata.Email;
+    const To = partydata.Email;
+
+    const data = {
+      unique_ID,
+      From,
+      To
+    }
+
+    fs.writeFile(`./transactions/${voterid}.json`, JSON.stringify(data), (err) => {
+      if (err) throw err
+    })
+
+  } catch (error) {
+    if (error) throw error
+  }
+
 })
 
 //===================================================================
 
 //server
 app.listen(port, () => {
-    console.log(`Server is running on port: ${port}`);
+  console.log(`Server is running on port: ${port}`);
 })
